@@ -19,7 +19,7 @@ public:
 
 	using Lidar2D::pi;
 
-	class Measure {
+	class Measure { // angle: [0,360)
 		double d;
 		double a;
 	public:
