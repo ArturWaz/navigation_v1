@@ -11,6 +11,7 @@
 
 
 /*
+ *
  *  maximum simulation or real time is about 9*10^9[s] (max(int64)), about 292 years ;D
  *
  *  times are reseted while using SimulationEnvironment::run(void (*funcRun)());
