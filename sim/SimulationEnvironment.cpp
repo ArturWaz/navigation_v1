@@ -30,13 +30,23 @@ void SimulationEnvironment::setup(void (*funcSetup)(SimulationEnvironment &)) {
 
 
 void SimulationEnvironment::run(void (*funcRun)(SimulationEnvironment const &)) {
-	timeSimReset();
-	timeRealReset();
+	simulationBegin();
 	while (timeReal() <= timeRealEnd_ && timeSim() <= timeSimEnd_) {
+
+
 
 		funcRun(*this);
 
-		clockSimulation_.nextStep(timeSimStep_);
+
+
+		if (!simulationStep()) {
+			if (1. < timeSimMultiplayer_)
+				std::cerr << "\tWarning: Simulation multiplier is too big.\n";
+			else
+				std::cerr << "\tWarning: Cannot follow real time.\n";
+		}
+
+		/*clockSimulation_.nextStep(timeSimStep_);
 		if (timeSimMultiplayer_ != 0) {
 			nanosecond const scaledSimTime = timeSim()/timeSimMultiplayer_;
 			if (scaledSimTime < timeReal()) {
@@ -47,9 +57,9 @@ void SimulationEnvironment::run(void (*funcRun)(SimulationEnvironment const &)) 
 				continue;
 			}
 			while (timeReal() < scaledSimTime);
-		}
+		}*/
 	}
-	clockReal_.stop();
+	simulationEnd();
 }
 
 

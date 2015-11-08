@@ -52,8 +52,25 @@ public:
 
 protected:
 
-	inline void timeRealReset() { clockReal_.reset(); }
-	inline void timeSimReset() { clockSimulation_.reset(); }
+	inline void simulationBegin() {
+		clockSimulation_.reset();
+		clockReal_.reset();
+	}
+
+	inline bool simulationStep() {
+		clockSimulation_.nextStep(timeSimStep_);
+		if (timeSimMultiplayer_ != .0) {
+			nanosecond const scaledSimTime = timeSim()/timeSimMultiplayer_;
+			if (scaledSimTime < timeReal())
+				return false;
+			while (timeReal() < scaledSimTime);
+		}
+		return true;
+	}
+
+	inline void simulationEnd() {
+		clockReal_.stop();
+	}
 
 private:
 
