@@ -33,7 +33,7 @@ public:
 
 	RealLidar2D(Map2D const *map, double const &scanSpeed, double const &rangeMax,
 				double const &rangeResolution, double const &angleResolution,
-				double const &rangeNoiseVariance = .0, double const &angleNoiseVariance = .0,
+				double const &rangeNoiseVariance = .0, double const &angleNoiseVariance = .0, unsigned const &seed = 0,
 				double const &rangeMin = .0, double const &scanAngle = .0) noexcept;
 
 	~RealLidar2D();

@@ -5,6 +5,7 @@
 
 #include <realLidar/RealLidar2D.h>
 #include <cmath>
+#include <chrono>
 
 
 
@@ -23,13 +24,14 @@ RealLidar2D::RealLidar2D(Map2D const *map, const double& scanSpeed, const double
 			rangeResolution_{.0},
 			angleResolution_{.0},
 			scanAngle_{.0},
+			generator{unsigned(std::chrono::system_clock::now().time_since_epoch().count())},
 			rangeDistribution{.0,.0},
 			angleDistribution{.0,.0} {}
 
 
 RealLidar2D::RealLidar2D(Map2D const *map, double const &scanSpeed, double const &rangeMax,
 		double const &rangeResolution, double const &angleResolution,
-		double const &rangeNoiseVariance, double const &angleNoiseVariance,
+		double const &rangeNoiseVariance, double const &angleNoiseVariance, unsigned const &seed,
 		double const &rangeMin, double const &scanAngle) noexcept :
 			Lidar2D(map),
 			scanSpeed_{scanSpeed*2.*pi},
@@ -38,6 +40,7 @@ RealLidar2D::RealLidar2D(Map2D const *map, double const &scanSpeed, double const
 			rangeResolution_{std::abs(rangeResolution)},
 			angleResolution_{std::abs(angleResolution)},
 			scanAngle_{std::fmod(scanAngle,2.*pi)/2.},
+			generator{seed ? seed : unsigned(std::chrono::system_clock::now().time_since_epoch().count()) },
 			rangeDistribution{.0,std::sqrt(rangeNoiseVariance)},
 			angleDistribution{.0,std::sqrt(angleNoiseVariance)} {}
 
