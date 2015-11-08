@@ -18,8 +18,8 @@ public:
 	Map2D();
 	~Map2D();
 
-	bool readMap(std::string const &);
-	bool saveMap(std::string const &);
+	bool readMap(std::string const &fileName);
+	bool saveMap(std::string const &fileName);
 
 
 	std::vector<LineSegment2D> lineSegments;

@@ -9,6 +9,8 @@
 #include <utility>
 #include <cmath>
 #include <array>
+#include <cstdlib>
+#include <random>
 
 
 
@@ -16,6 +18,7 @@
 #include "Timer.h"
 #include "Point2D.h"
 #include "LineSegment2D.h"
+#include "RealLidar2D.h"
 
 
 
@@ -34,106 +37,72 @@ std::pair<bool,bool> moveStep(int8_t forward) {
 using namespace std;
 
 
-double func(double t) {
-	if (t == 2) return 2.;
-	return .0;
-}
+double const pi{3.1415926535897932384626433832795};
+inline double rad2deg(double const &angle) { return (angle/pi)*180.; }
+inline double deg2rad(double const &angle) { return (angle/180.)*pi; }
 
 
 
 
+Map2D map{};
+RealLidar2D lidar{&map, 15./360.,50, .1,deg2rad(1), 2,deg2rad(0.5)};
 
 
-int main() {
+
+int p[10]{};
 
 
-	/*auto func = [](nanosecond t) -> double {
-		if (t%2) return 1.;
-		return .0;
-	};*/
+long double sumDist{0.};
+long double sumAngle{0.};
 
+double tend{10};
+
+void simulation() {
 
 	auto setup = [](SimulationEnvironment &sim) -> void {
-		sim.setTimeRealEnd(1000);
-		sim.setTimeSimStep(0.1);
+		map.readMap("map.txt");
+		sim.setTimeSimMultiplayer(0);
+		sim.setTimeRealEnd(s2ns(60));
+		sim.setTimeSimEnd(s2ns(tend));
 	};
 
 
 	auto loop = [](SimulationEnvironment const &sim) -> void {
+		double distance{},angle{};
+		RealLidar2D::Measure measure{lidar.measure(sim.time(),Point2D{.0,.0},distance,angle)};
+		cout << ns2s(sim.time()) << ":  idealRange[" << distance << "];   idealAngle[" << rad2deg(angle) <<
+									"]:   range[" << measure.distance() << "]:   angle[" << rad2deg(measure.angle()) << "]\n";
 
-		//bool intt = generator.checkInterrupt(sim.timeSim(),func);
-		//cout << "Time:   " << sim.timeSim_d() << ";   int check:   " << intt << endl;
+
+
+//		sumDist += measure.distance();
+//		sumAngle += measure.angle()>lidar.pi ? measure.angle()-2.*lidar.pi : measure.angle();
+//	    if ((measure.distance()>=0.0)&&(measure.distance()<10.0)) ++p[int(measure.distance())];
 	};
+
+
+
 
 
 
 	SimulationEnvironment sim{};
 	sim.setup(setup);
-	//sim.run(loop);
+	sim.run(loop);
+
+
+//	cout << "av dist: " << sumDist/tend << ",   av angle: " << sumAngle/tend << endl;
+//
+//	  for (int i=0; i<10; ++i) {
+//	    std::cout << i << "-" << (i+1) << ": ";
+//	    std::cout << std::string(p[i]*100/tend,'*') << std::endl;
+//	  }
+
+}
 
 
 
+int main(int argc, char *argv[]) {
 
-	Map2D m{};
-	Lidar2D sense{&m};
-
-	m.lineSegments = vector<LineSegment2D>{LineSegment2D(Point2D(-2,-3),Point2D(10.112,20.007))};
-
-
-	//cout << m.edge_[0].p0() << "   " << m.edge_[0].p1() << endl;
-	Point2D p{7,12};
-	double angle{152.2356585*sense.pi/180.};
-
-	cout << "distance: " << sense.measure(p,angle) << endl;
-
-	//cout << m.edge_.size() << endl;
-
-	//cout << p[0] << "   " << p[1] << endl;
-	//cout << p1[0] << "   " << p1[1] << endl;
-
-	//cout << p.distance(p1) << endl;
-
-
-	/*QuadratureGenerator generator;
-	QuadratureInput sensor;
-
-	nanosecond timeLast = 0;
-
-	generator.setSpeed(1);
-
-	while (true) {
-
-
-		nanosecond t = WorldClock.getTime();
-		if (t == 0 *1e9){
-			cout << "time: " << t << endl;
-			generator.setSpeed(0);
-		}
-		else if(t == 5 *1e9){
-			cout << "time: " << t << endl;
-			generator.setSpeed(1);
-		}
-		else if(t == 10 *1e9){
-			cout << "time: " << t << endl;
-			generator.setSpeed(0);
-		}
-
-
-		generator.run(sensor);
-
-
-		nanosecond time = WorldClock.getTime();
-		if ( 1 *1e9 <= time - timeLast) {
-
-
-			cout << sensor.pose() << ", " << t << ", " << time << endl;
-
-
-			timeLast = time;
-		}
-
-		WorldClock.nextStep(1e6); // sim step = 1ms
-		usleep(500);
-	}*/
+	simulation();
 
 }

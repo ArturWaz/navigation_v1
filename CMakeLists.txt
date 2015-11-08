@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 2.8)
 #set(CMAKE_PREFIX_PATH CMAKE_PREFIX_PATH "F:\\_compilers\\_lib\\opencv\\build")
 
 
-set(PROJECT_NAME encoder)
+set(PROJECT_NAME simulation)
 project(${PROJECT_NAME})
 
 
@@ -23,12 +23,13 @@ endif (UNIX)
 
 #find_package(OpenCV REQUIRED)
 
-include_directories("sim" "lidar")
+include_directories("sim" "lidar" "sim/realLidar")
 
 add_subdirectory(sim)
 add_subdirectory(lidar)
+add_subdirectory(sim/realLidar)
 
-set(LIBS boost_system boost_timer sim lidar)
+set(LIBS boost_system boost_timer sim lidar realLidar)
 
 
 add_executable(${PROJECT_NAME} main.cpp)

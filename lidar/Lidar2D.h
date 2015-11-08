@@ -22,15 +22,10 @@ public:
 	~Lidar2D();
 
 
-	inline double const &distance() const noexcept { return distance_; }
-
-
-	double const &measure(Point2D const &pose, double const &angle) noexcept;
+	double measure(double const &angle, Point2D const &pose) const noexcept;
 
 
 private:
-
-	double distance_;
 
 	Map2D const *m_;
 

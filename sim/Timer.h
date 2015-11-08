@@ -14,19 +14,19 @@ typedef boost::timer::nanosecond_type nanosecond;
 
 
 
-inline double s(nanosecond const &t) noexcept {
+inline double ns2s(nanosecond const &t) noexcept {
 	return double(t)/1e9;
 }
 
-inline double ms(nanosecond const &t) noexcept {
+inline double ns2ms(nanosecond const &t) noexcept {
 	return double(t)/1e6;
 }
 
-inline double us(nanosecond const &t) noexcept {
+inline double ns2us(nanosecond const &t) noexcept {
 	return double(t)/1e3;
 }
 
-inline nanosecond sTOns(double const &t) noexcept {
+inline nanosecond s2ns(double const &t) noexcept {
 	return t*1e9;
 }
 

@@ -8,6 +8,7 @@
 #include <cmath>
 
 #include <iostream>
+#include <sstream>
 
 
 
@@ -15,14 +16,13 @@ static double const maxDistance{1e300};
 
 
 Lidar2D::Lidar2D(Map2D const *map) noexcept :
-			distance_{-1.},
 			m_{map} {}
 
 
 Lidar2D::~Lidar2D() {}
 
 
-double const &Lidar2D::measure(Point2D const &pose, double const &angle) noexcept {
+double Lidar2D::measure(double const &angle, Point2D const &pose) const noexcept {
 	double smallestDistance{maxDistance};
 
 	double sangle{std::sin(pi/2-angle)};
@@ -41,11 +41,9 @@ double const &Lidar2D::measure(Point2D const &pose, double const &angle) noexcep
 		if (std::abs(line.p0().x()-line.p1().y()) <= epsilon && line.p0().y()*line.p1().y() <= 0) {
 			return 0.;
 		}
-		else {
-			double const m{(line.p0().y()-line.p1().y())/(line.p0().x()-line.p1().x())};
-			if (std::abs(line.p0().y()-m*line.p0().x()) <= epsilon && line.p0().y()*line.p1().y() <= 0)
-				return 0.;
-		}
+		double m{(line.p0().y()-line.p1().y())/(line.p0().x()-line.p1().x())};
+		if (std::abs(line.p0().y()-m*line.p0().x()) <= epsilon && line.p0().y()*line.p1().y() <= 0)
+			return 0.;
 
 		line.p0() = rotate(line.p0());
 		line.p1() = rotate(line.p1());
@@ -58,7 +56,7 @@ double const &Lidar2D::measure(Point2D const &pose, double const &angle) noexcep
 
 		if (0 < line.p0().x()*line.p1().x())   return maxDistance;
 
-		double const m{(line.p0().y()-line.p1().y())/(line.p0().x()-line.p1().x())};
+		m = (line.p0().y()-line.p1().y())/(line.p0().x()-line.p1().x());
 		double const distance{line.p0().y()-m*line.p0().x()};
 
 		if (distance < 0)   return maxDistance;
@@ -75,6 +73,5 @@ double const &Lidar2D::measure(Point2D const &pose, double const &angle) noexcep
 			smallestDistance = distance;
 	}
 
-	distance_ = smallestDistance;
-	return distance_;
+	return smallestDistance;
 }

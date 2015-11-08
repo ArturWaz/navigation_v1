@@ -41,7 +41,7 @@ void SimulationEnvironment::run(void (*funcRun)(SimulationEnvironment const &)) 
 			nanosecond const scaledSimTime = timeSim()/timeSimMultiplayer_;
 			if (scaledSimTime < timeReal()) {
 				if (1. < timeSimMultiplayer_)
-					std::cerr << "\tWarning: Simulation multiplayer is too big.\n";
+					std::cerr << "\tWarning: Simulation multiplier is too big.\n";
 				else
 					std::cerr << "\tWarning: Cannot follow real time.\n";
 				continue;
