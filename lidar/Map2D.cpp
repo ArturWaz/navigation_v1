@@ -29,25 +29,13 @@ bool Map2D::readMap(const std::string &fileName) {
 		LineSegment2D line{};
 		char *ptr = const_cast<char*>(str.data());
 
-
-		if (*ptr != '[') throw 1;
-
-		if (*(++ptr) != '(') throw 2;
-		line.p0().x() = strtod(++ptr,&ptr);
+		line.p0().x() = strtod(ptr,&ptr);
 		if (*ptr != ',') throw 3;
 		line.p0().y() = strtod(++ptr,&ptr);
-		if (*ptr != ')') throw 4;
-
-		if (*(++ptr) != ',') throw 5;
-
-		if (*(++ptr) != '(') throw 6;
+		if (*ptr != ',') throw 5;
 		line.p1().x() = strtod(++ptr,&ptr);
 		if (*ptr != ',') throw 7;
 		line.p1().y() = strtod(++ptr,&ptr);
-		if (*ptr != ')') throw 8;
-
-		if (*(++ptr) != ']') throw 9;
-
 
 		return line;
 	};
@@ -56,7 +44,8 @@ bool Map2D::readMap(const std::string &fileName) {
 	try {
 		std::string fileLine{};
 		while (std::getline(in,fileLine)) {
-			lineSegments.push_back(parseLine(fileLine));
+			if (fileLine.at(0) != '#')
+				lineSegments.push_back(parseLine(fileLine));
 		}
 	} catch (...) {
 		throw std::runtime_error("Cannot properly parse input map file.");
