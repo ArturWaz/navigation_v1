@@ -10,6 +10,7 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <fstream>
 #include <random>
 
 
@@ -45,39 +46,33 @@ inline double deg2rad(double const &angle) { return (angle/180.)*pi; }
 
 
 Map2D map{};
-RealLidar2D lidar{&map, 15./360.,50, .1,deg2rad(1), 2,deg2rad(0.5)};
+RealLidar2D lidar{&map, 1./360.,50, .0,deg2rad(.0), 0.1,deg2rad(0.1)};
 
 
+ofstream out{"out.csv",ios::out|ios::trunc};
 
-int p[10]{};
-
-
-long double sumDist{0.};
-long double sumAngle{0.};
-
-double tend{10};
 
 void simulation() {
 
 	auto setup = [](SimulationEnvironment &sim) -> void {
-		map.readMap("map.txt");
+		map.readMap("map.csv");
 		sim.setTimeSimMultiplayer(0);
 		sim.setTimeRealEnd(s2ns(60));
-		sim.setTimeSimEnd(s2ns(tend));
+		sim.setTimeSimEnd(s2ns(360*1));
+		//sim.setTimeSimStep()
+		out << "time, rangeIdeal, angleIdeal, rangeMeas, angleMeas\n";
 	};
 
 
 	auto loop = [](SimulationEnvironment const &sim) -> void {
 		double distance{},angle{};
 		RealLidar2D::Measure measure{lidar.measure(sim.time(),Point2D{.0,.0},distance,angle)};
-		cout << ns2s(sim.time()) << ":  idealRange[" << distance << "];   idealAngle[" << rad2deg(angle) <<
-									"]:   range[" << measure.distance() << "]:   angle[" << rad2deg(measure.angle()) << "]\n";
 
+//		cout << ns2s(sim.time()) << ":  idealRange[" << distance << "];   idealAngle[" << rad2deg(angle) <<
+//									"]:   range[" << measure.distance() << "]:   angle[" << rad2deg(measure.angle()) << "]\n";
 
+		out << ns2s(sim.time()) << ", " << distance << ", " << angle << ", " << measure.distance() << ", " << measure.angle() << "\n";
 
-//		sumDist += measure.distance();
-//		sumAngle += measure.angle()>lidar.pi ? measure.angle()-2.*lidar.pi : measure.angle();
-//	    if ((measure.distance()>=0.0)&&(measure.distance()<10.0)) ++p[int(measure.distance())];
 	};
 
 
@@ -89,13 +84,7 @@ void simulation() {
 	sim.setup(setup);
 	sim.run(loop);
 
-
-//	cout << "av dist: " << sumDist/tend << ",   av angle: " << sumAngle/tend << endl;
-//
-//	  for (int i=0; i<10; ++i) {
-//	    std::cout << i << "-" << (i+1) << ": ";
-//	    std::cout << std::string(p[i]*100/tend,'*') << std::endl;
-//	  }
+	cout << "\n\t FINISHED \n\n";
 
 }
 
