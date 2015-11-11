@@ -40,10 +40,10 @@ void SimulationEnvironment::run(void (*funcRun)(SimulationEnvironment const &)) 
 
 
 		if (!simulationStep()) {
-			if (1. < timeSimMultiplayer_)
-				std::cerr << "\tWarning: Simulation multiplier is too big.\n";
-			else
-				std::cerr << "\tWarning: Cannot follow real time.\n";
+//			if (1. < timeSimMultiplayer_)
+//				std::cerr << "\tWarning: Simulation multiplier is too big.\n";
+//			else
+//				std::cerr << "\tWarning: Cannot follow real time.\n";
 		}
 
 		/*clockSimulation_.nextStep(timeSimStep_);
