@@ -29,7 +29,7 @@ add_subdirectory(sim)
 add_subdirectory(lidar)
 add_subdirectory(sim/realLidar)
 
-set(LIBS boost_system boost_timer sim lidar realLidar)
+set(LIBS boost_system boost_timer sim lidar realLidar boost_thread boost_date_time boost_regex boost_serialization)
 
 
 add_executable(${PROJECT_NAME} main.cpp)

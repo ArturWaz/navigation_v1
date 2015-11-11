@@ -13,29 +13,39 @@
 #include <fstream>
 #include <random>
 
+#include <boost/asio.hpp>
+#include <Time.h>
+
 
 
 #include "SimulationEnvironment.h"
-#include "Timer.h"
 #include "Point2D.h"
 #include "LineSegment2D.h"
 #include "RealLidar2D.h"
+#include "Robot.h"
 
 
-
-/*
-std::pair<bool,bool> moveStep(int8_t forward) {
-	bool tab[4][2] = {{false,false}, {false,true}, {true,true}, {true,false}};
-	static int8_t lastSense = 0;
-
-	lastSense = (lastSense+forward)%4;
-	if (lastSense < 0) lastSense = 3;
-
-	return std::pair<bool,bool>(tab[lastSense][0],tab[lastSense][1]);
-}
-*/
 
 using namespace std;
+using boost::asio::ip::tcp;
+
+
+
+size_t const LENGTH = 2+2*sizeof(double);
+array<uint8_t,LENGTH> packetDetectedPoint(Point2D const &p) {
+	array<uint8_t,LENGTH> packet{};
+	uint8_t *ptr = packet.data();
+	*ptr = 0xFF;
+	*(++ptr) = 0x01;
+	++ptr;
+	memcpy(ptr,&p.x(),sizeof(double));
+	ptr += sizeof(double);
+	memcpy(ptr,&p.y(),sizeof(double));
+	return packet;
+}
+
+
+
 
 
 double const pi{3.1415926535897932384626433832795};
@@ -45,38 +55,58 @@ inline double deg2rad(double const &angle) { return (angle/180.)*pi; }
 
 
 
-Map2D map{};
-RealLidar2D lidar{&map, 1./360.,50, .0,deg2rad(.0), 0.1,deg2rad(0.1)};
+Map2D building{};
+RealLidar2D lidar{&building, 5.5,s2ns(0.0005),16.38375, .00025,deg2rad(360./2340.), 0.0001,deg2rad(0.01)}; // RP lidar parameters
+Robot robot;
+Trajectory trajectory;
 
 
 ofstream out{"out.csv",ios::out|ios::trunc};
 
 
-void simulation() {
+boost::asio::io_service io_service;
+tcp::socket s(io_service);
+tcp::resolver resolver(io_service);
+
+
+int iter{0};
+nanosecond timeInterval{s2ns(0.1)};
+nanosecond lastTime{0};
+
+void lidarSimpleTest() {
+
+	boost::asio::connect(s, resolver.resolve({"localhost", "8888"}));
 
 	auto setup = [](SimulationEnvironment &sim) -> void {
-		map.readMap("map.csv");
-		sim.setTimeSimMultiplayer(0);
-		sim.setTimeRealEnd(s2ns(60));
-		sim.setTimeSimEnd(s2ns(360*1));
-		//sim.setTimeSimStep()
-		out << "time, rangeIdeal, angleIdeal, rangeMeas, angleMeas\n";
+		building.readMap("map.csv");
+		trajectory.read("trajectory.csv");
+		sim.setTimeSimMultiplayer(0.1);
+		sim.setTimeRealEnd(s2ns(6000));
+		sim.setTimeSimEnd(s2ns(57));
+		sim.setTimeSimStep(s2ns(0.5e-3));
+		out << "# time, x_ideal, y_ideal, x_real, y_real\n";
 	};
 
 
 	auto loop = [](SimulationEnvironment const &sim) -> void {
-		double distance{},angle{};
-		RealLidar2D::Measure measure{lidar.measure(sim.time(),Point2D{.0,.0},distance,angle)};
+		RealLidar2D::Measure sensor{},ideal{};
+		if (lidar.measure(sim.time(),robot.pose(),sensor,ideal)) {
+			if (sensor.distance() < 5) {
+				out << ns2s(sim.time()) << ", " << cos(ideal.angle())*ideal.distance()+robot.pose().x() << ", " <<
+													sin(ideal.angle())*ideal.distance()+robot.pose().y() << ", " <<
+													cos(sensor.angle())*sensor.distance()+robot.pose().x() << ", " <<
+													sin(sensor.angle())*sensor.distance()+robot.pose().y() << "\n";
+				array<uint8_t,LENGTH> p = packetDetectedPoint({cos(sensor.angle())*sensor.distance()+robot.pose().x(),
+																sin(sensor.angle())*sensor.distance()+robot.pose().y()});
+				boost::asio::write(s, boost::asio::buffer(p, p.size()));
+			}
+		}
 
-//		cout << ns2s(sim.time()) << ":  idealRange[" << distance << "];   idealAngle[" << rad2deg(angle) <<
-//									"]:   range[" << measure.distance() << "]:   angle[" << rad2deg(measure.angle()) << "]\n";
+		robot.moveTo(trajectory.pose(sim.time()));
 
-		out << ns2s(sim.time()) << ", " << distance << ", " << angle << ", " << measure.distance() << ", " << measure.angle() << "\n";
+		if (sim.time()%s2ns(1) == 0) cout << "Simulation time: " << ns2s(sim.time()) << "; real time: " << ns2s(sim.timeReal()) << endl;
 
 	};
-
-
-
 
 
 
@@ -84,7 +114,9 @@ void simulation() {
 	sim.setup(setup);
 	sim.run(loop);
 
-	cout << "\n\t FINISHED \n\n";
+
+	cout << "\n\t\t FINISHED \n";
+	cout << "\tSimulation time: " << ns2s(sim.time()) << "; real time: " << ns2s(sim.timeReal()) << endl;
 
 }
 
@@ -92,6 +124,11 @@ void simulation() {
 
 int main(int argc, char *argv[]) {
 
-	simulation();
+	lidarSimpleTest();
+
+//	Trajectory t;
+//
+//	t.read("trajectory.csv");
+//	cout << t.pose(s2ns(59.51)) << endl;
 
 }
