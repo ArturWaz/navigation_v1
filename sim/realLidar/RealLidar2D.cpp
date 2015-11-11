@@ -12,11 +12,10 @@
 
 
 
-
 RealLidar2D::~RealLidar2D() {}
 
 
-RealLidar2D::RealLidar2D(Map2D const *map, const double& scanSpeed, const double& rangeMax) noexcept :
+RealLidar2D::RealLidar2D(Map2D const *map, const double& scanSpeed, nanosecond const samplingTime, const double& rangeMax) noexcept :
 			Lidar2D(map),
 			scanSpeed_{scanSpeed*2.*pi},
 			rangeMax_{rangeMax},
@@ -24,12 +23,14 @@ RealLidar2D::RealLidar2D(Map2D const *map, const double& scanSpeed, const double
 			rangeResolution_{.0},
 			angleResolution_{.0},
 			scanAngle_{.0},
+			samplingTime_{samplingTime},
+			timeLastMeasure_{-2*samplingTime},
 			generator{unsigned(std::chrono::system_clock::now().time_since_epoch().count())},
 			rangeDistribution{.0,.0},
 			angleDistribution{.0,.0} {}
 
 
-RealLidar2D::RealLidar2D(Map2D const *map, double const &scanSpeed, double const &rangeMax,
+RealLidar2D::RealLidar2D(Map2D const *map, double const &scanSpeed, nanosecond const samplingTime, double const &rangeMax,
 		double const &rangeResolution, double const &angleResolution,
 		double const &rangeNoiseVariance, double const &angleNoiseVariance, unsigned const &seed,
 		double const &rangeMin, double const &scanAngle) noexcept :
@@ -40,20 +41,25 @@ RealLidar2D::RealLidar2D(Map2D const *map, double const &scanSpeed, double const
 			rangeResolution_{std::abs(rangeResolution)},
 			angleResolution_{std::abs(angleResolution)},
 			scanAngle_{std::fmod(scanAngle,2.*pi)/2.},
+			samplingTime_{samplingTime},
+			timeLastMeasure_{-2*samplingTime},
 			generator{seed ? seed : unsigned(std::chrono::system_clock::now().time_since_epoch().count()) },
 			rangeDistribution{.0,std::sqrt(rangeNoiseVariance)},
 			angleDistribution{.0,std::sqrt(angleNoiseVariance)} {}
 
 
 
-RealLidar2D::Measure RealLidar2D::measure(const nanosecond& time, const Point2D& pose) noexcept {
-	double tmp1{},tmp2{};
-	return measure(time,pose,tmp1,tmp2);
+bool RealLidar2D::measure(const nanosecond& time, const Point2D& pose, Measure &valueSensed) noexcept {
+	Measure m{};
+	return measure(time,pose,valueSensed,m);
 }
 
 
 
-RealLidar2D::Measure RealLidar2D::measure(const nanosecond& time, const Point2D& pose, double &distanceIdeal, double &angleIdeal) noexcept {
+bool RealLidar2D::measure(const nanosecond& time, const Point2D& pose, Measure &valueSensed, Measure &valueIdeal) noexcept {
+
+	if (time - timeLastMeasure_ < samplingTime_)
+		return false;
 
 	auto applyRes = [](double const &value, double const &resolution) -> double {
 		if (resolution == .0) return value;
@@ -73,18 +79,20 @@ RealLidar2D::Measure RealLidar2D::measure(const nanosecond& time, const Point2D&
 	double const rangeNoise{rangeDistribution(generator)};
 	double const angleNoise{angleDistribution(generator)};
 
-	angleIdeal = angleLimit(ns2s(time)*scanSpeed_);
+	valueIdeal.m[1] = angleLimit(ns2s(time)*scanSpeed_);
 
 
-	if (scanAngle_ == .0 || angleIdeal <= scanAngle_ || 2.*pi-scanAngle_ <= angleIdeal) {
+	if (scanAngle_ == .0 || valueIdeal.m[1] <= scanAngle_ || 2.*pi-scanAngle_ <= valueIdeal.m[1]) {
 		Lidar2D const *lidar = this;
-		distanceIdeal = lidar->measure(angleIdeal,pose);
-		return Measure{applyRes(rangeLimit(distanceIdeal + rangeNoise),rangeResolution_),
-						applyRes(angleLimit(angleIdeal + angleNoise),angleResolution_)};
+		valueIdeal.m[0] = lidar->measure(valueIdeal.m[1],pose);
+		valueSensed.m[0] = applyRes(rangeLimit(valueIdeal.m[0] + rangeNoise),rangeResolution_);
+		valueSensed.m[1] = applyRes(angleLimit(valueIdeal.m[1] + angleNoise),angleResolution_);
+		return true;
 	}
 
-	distanceIdeal = .0;
-	return Measure{applyRes(rangeLimit(rangeNoise),rangeResolution_),
-					applyRes(angleLimit(angleIdeal + angleNoise),angleResolution_)};
+	valueIdeal.m[0] = .0;
+	valueSensed.m[0] = applyRes(rangeLimit(rangeNoise),rangeResolution_);
+	valueSensed.m[1] = applyRes(angleLimit(valueIdeal.m[1] + angleNoise),angleResolution_);
+	return true;
 }
 
